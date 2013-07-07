@@ -25,16 +25,8 @@ body * {
 	padding-top: 0;
 }
 
-#fb-wall > .fb-post > p:first-of-type {
-	margin-top: 0.6em;
-}
-
-#fb-wall .message > p:first-of-type {
-	margin-top: 0.6em;
-}
-
-#fb-wall h2 {
-	margin: .25em 0 .75em 0;
+#fb-wall .fb-post .likes {
+    padding-left: 30px;
 }
 
 
@@ -61,15 +53,19 @@ body * {
 }
 
 #fb-wall .fb-post .news-image {
-	width: 250px;
-	height: 250px;
-	float: left;
-	margin: 0 25px 25px 0;
-	border: solid 3px #eaeaea;
-	box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.4);
-	background-size: cover;
-	background-position: center center;
-	background-repeat: no-repeat;
+    float: left;
+    max-width: 300px;
+    max-height: 300px;
+    margin: 10px 35px 20px 0;
+}
+
+#fb-wall .fb-post iframe {
+    border: none;
+}
+
+#fb-wall .fb-post .youtube {
+    width: 560px;
+    height: 315px;
 }
 
 

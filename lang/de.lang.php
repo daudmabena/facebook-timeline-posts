@@ -8,3 +8,4 @@ define('POSTED_ON', 'Veröffentlicht am');
 define('PROFILE', 'Profil');
 define('SEE_ON', 'Auf');
 define('SHOW_COMMENTS', 'Kommentare anzeigen');
+define('SHOW_LIKES', 'Likes anzeigen');

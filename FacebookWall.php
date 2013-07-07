@@ -8,23 +8,26 @@ class FacebookWall {
     // Output buffer
     private $html;
 
+    // Config
     private $cfg = array(
-        'lang'               => 'en',
-        'langPath'        => 'lang/',
-        'numPosts'           => 15,
-        'justOwnPosts'     => true,
-        'showLikes'           => true,
-        'showComments'     => true,
-        'showDate'            => true,
-        'hyphenate'        => false,
+        'lang'          => 'en',
+        'langPath'      => 'lang/',
+        'numPosts'      => 15,
+        'limitLikes'    => 100,
+        'limitComments' => 100,
+        'justOwnPosts'  => true,
+        'showLikes'     => true,
+        'showComments'  => true,
+        'showDate'      => true,
+        'hyphenate'     => false,
         'quotes'        => true,
-        'youtube'           => array(
-            'vq'                 => 'large',
-            'modestbranding'    => 1,
-            'showinfo'            => 0,
-            'autohide'            => 1,
-            'wmmode'            => 'transparent',
-            'html5'                => 1
+        'youtube'       => array(
+            'vq'              => 'large',
+            'modestbranding'  => 1,
+            'showinfo'        => 0,
+            'autohide'        => 1,
+            'wmmode'          => 'transparent',
+            'html5'           => 1
         )
     );
 
@@ -81,13 +84,21 @@ class FacebookWall {
 
     /**
      * Main methode: Gathers data from Facebook wall and renders HTML markup
-     * @return string complete HTML markup
+     * @return false on error, HTML markup on success
      */
     public function render() {
 
+        // Require i18n file
         require_once($this->cfg['langPath'] . $this->cfg['lang'] . '.lang.php');
 
-        foreach ($this->retrieveData() as $this->post) {
+        try {
+            $data = $this->retrieveData();
+        } catch (Exception $e) {
+            echo $e->getMessage();
+            return false;
+        }
+
+        foreach ($data as $this->post) {
             $this->postId = $this->getPostId();
 
             // Skip entries with no message or foreign posts
@@ -116,6 +127,7 @@ class FacebookWall {
             }
 
             $this->insertMessage();
+            // $this->insertLikes();
 
             if ($this->cfg['showComments']) {
                 $this->insertComments();
@@ -124,13 +136,10 @@ class FacebookWall {
             $this->insertFooter();
 
             $this->html .= '</div>';
-
-            $this->post = null;
         }
 
         $this->html .= '</div>';
 
-        // Ready HTML markup
         return $this->html;
     }
 
@@ -152,9 +161,25 @@ class FacebookWall {
      * @return object An object which contains last posts
      */
     private function retrieveData() {
-        $url = 'https://graph.facebook.com/' . $this->facebookId . '?fields=posts.limit(' . $this->cfg['numPosts'] .')&access_token=' . $this->accessToken;
+        if (empty($this->facebookId)) {
+            throw new Exception('Error: Facebook id not set!');
+        }
+        if (empty($this->accessToken)) {
+            throw new Exception('Error: Access token not set!');
+        }
+        $url = 'https://graph.facebook.com/' . $this->facebookId;
+        $url .= '?fields=posts.limit(' . $this->cfg['numPosts'] . ').fields(id,name,from,to,message,comments.limit(' . $this->cfg['limitComments'] . '),likes.limit(' . $this->cfg['limitLikes'] . '),picture,link,created_time,type)';
+        $url .= '&access_token=' . $this->accessToken;
+
         $wall = json_decode(file_get_contents($url));
-        $this->facebookId = $wall->id; // overwrite with numerical id
+
+        if (empty($wall)) {
+            throw new Exception('Error while retrieving Facebook data');
+        }
+
+        // Overwrite with numerical id
+        $this->facebookId = $wall->id;
+
         return $wall->posts->data;
     }
 
@@ -228,7 +253,7 @@ class FacebookWall {
         $img = str_replace('_s.jpg', '_n.jpg', $this->post->picture);
         $this->html .= '
             <a href="' . $this->post->link . '" title="' . SEE_ON . ' Facebook" target="_blank">
-                <div class="news-image" style="background-image: url(' . $img . ')"></div>
+                <img class="news-image" src="' . $img . '" />
             </a>
         ';
     }
@@ -245,6 +270,25 @@ class FacebookWall {
             </h2>
             <iframe class="youtube" src="http://www.youtube.com/embed/' . $urlParams['v'] . '?' . $this->parseYoutubeOptions() . '" allowfullscreen></iframe>
         ';
+    }
+
+    /**
+     * Inserts list of likes in markup
+     * This is rather experimental...
+     * @return void
+     */
+    private function insertLikes() {
+        if (isset($this->post->likes->data)) {
+            $this->html .= '<div class="likes" style="display: none">';
+            foreach ($this->post->likes->data as $person) {
+                $link = '<a href="https://facebook.com/' . $person->id . '" target="_blank" title="Facebook ' . PROFILE . '">' . $person->name . '</a>';
+                $this->html .= '<span class="like">' . $link . '</span>';
+                if ($person !== end($this->post->likes->data)) {
+                    $this->html .= ', ';
+                }
+            }
+            $this->html .= '</div>';
+        }
     }
 
     /**
@@ -282,13 +326,18 @@ class FacebookWall {
 
     /**
      * Get number of likes
-     * @return int Number of likes
+     * @return mixed Number of likes
      */
     private function getNumLikes() {
         if (!isset($this->post->likes)) {
             return 0;
         } else {
-            return count($this->post->likes->data);
+            $num = count($this->post->likes->data);
+            if ($num == $this->cfg['limitLikes']) {
+                return (string) ($this->cfg['limitLikes'] - 1) . '+';
+            } else {
+                return count($this->post->likes->data);
+            }
         }
     }
 
@@ -322,15 +371,16 @@ class FacebookWall {
 
     }
 
+    /**
+     * Parses given options for embedded YouTube videos
+     * @return string: GET parameters for embedding url
+     */
     private function parseYoutubeOptions() {
         $urlParams = '';
-
         $i = 1;
-        $n = count($this->cfg['youtube']);
-
         foreach ($this->cfg['youtube'] as $key => $value) {
             $urlParams .= $key . '=' . $value;
-            if ($i < $n) {
+            if ($i < count($this->cfg['youtube'])) {
                 $urlParams .= '&amp;';
             }
             $i++;
