@@ -1,0 +1,132 @@
+html, body {
+	font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;
+	font-size: 14px;
+	width: 100%;
+}
+
+body * {
+	-moz-box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+#fb-wall .fb-post {
+	overflow: hidden;
+	width: 100%;
+	margin: auto;
+	padding: 15px;
+}
+
+#fb-wall .fb-post + .fb-post {
+	border-top: solid 1px #333;
+}
+
+#fb-wall .fb-post:first-of-type {
+	padding-top: 0;
+}
+
+#fb-wall > .fb-post > p:first-of-type {
+	margin-top: 0.6em;
+}
+
+#fb-wall .message > p:first-of-type {
+	margin-top: 0.6em;
+}
+
+#fb-wall h2 {
+	margin: .25em 0 .75em 0;
+}
+
+
+#fb-wall .fb-post .comments {
+	margin: 15px 0;
+	clear: both;
+	font-size: 90%;
+}
+
+#fb-wall .fb-post .comments ul {
+	list-style: none;
+	margin: 0 0 0 30px;
+	padding: 0;
+	border-left: solid 4px #333;
+}
+
+#fb-wall .fb-post .comments ul li {
+	margin: 0;
+	padding: 8px 10px;
+}
+
+#fb-wall .fb-post .comments ul li + li {
+	border-top: solid 1px #222;
+}
+
+#fb-wall .fb-post .news-image {
+	width: 250px;
+	height: 250px;
+	float: left;
+	margin: 0 25px 25px 0;
+	border: solid 3px #eaeaea;
+	box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.4);
+	background-size: cover;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+
+
+#fb-wall footer {
+	padding: 8px 0;
+	clear: both;
+	font-size: 10pt;
+}
+
+#fb-wall footer > span:first-child {
+	margin-right: 15px;
+}
+
+#fb-wall footer .icon-likes,
+#fb-wall footer .icon-comments {
+	position: relative;
+	top: 2px;
+	margin-right: 6px;
+	font-size: 12pt;
+}
+
+
+#fb-wall footer .date {
+	display: inline-block;
+	float: right;
+}
+
+
+/* icomoon.io */
+
+@font-face {
+	font-family: 'icons';
+	src:url('fonts/icons.eot');
+	src:url('fonts/icons.eot?#iefix') format('embedded-opentype'),
+		url('fonts/icons.woff') format('woff'),
+		url('fonts/icons.ttf') format('truetype'),
+		url('fonts/icons.svg#icons') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+
+.icon-likes, .icon-comments, .icon-external {
+	font-family: 'icons';
+	speak: none;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	text-transform: none;
+	line-height: 1;
+	-webkit-font-smoothing: antialiased;
+}
+.icon-likes:before {
+	content: "\e001";
+}
+.icon-comments:before {
+	content: "\e002";
+}
+.icon-external:before {
+	content: "\e000";
+}

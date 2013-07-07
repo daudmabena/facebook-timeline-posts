@@ -6,7 +6,7 @@ class FacebookWall {
 	private $accessToken;
 
 	// Output buffer
-	private $html = '';
+	private $html;
 
 	private $cfg = array(
 		'lang'		   	=> 'en',
@@ -33,7 +33,7 @@ class FacebookWall {
 
 	/**
 	 * C'tor
-	 * @param mixed  $id    Facebook ID of user or page
+	 * @param mixed  $id    Numeric Facebook ID of user or page
 	 * @param string $token Facebook access token
 	 */
 	function __construct($id = null, $token = null) {
@@ -48,11 +48,13 @@ class FacebookWall {
 		if (isset($num)) {
 			$this->cfg['numPosts'] = $num;
 		}
+
+		$this->html = '<div id="fb-wall">';
 	}
 
 	public function setFacebookId($id) {
 		$this->facebookId = $id;
-	}	
+	}
 
 	public function setAccessToken($token) {
 		$this->accessToken = $token;
@@ -76,7 +78,7 @@ class FacebookWall {
 			}
 		}
 	}
-	
+
 	/**
 	 * Main methode: Gathers data from Facebook wall and renders HTML markup
 	 * @return string complete HTML markup
@@ -85,11 +87,9 @@ class FacebookWall {
 
 		require_once($this->cfg['langPath'] . $this->cfg['lang'] . '.lang.php');
 
-		foreach ($this->retrieveData() as $post) {
-			$this->post = $post;
+		foreach ($this->retrieveData() as $this->post) {
 			$this->postId = $this->getPostId();
-			unset($post);	
-			
+
 			// Skip entries with no message or foreign posts
 			if (empty($this->post->message) || $this->post->from->id !== $this->facebookId) {
 				continue;
@@ -102,14 +102,14 @@ class FacebookWall {
 				$addClass = null;
 			}
 
-			$this->html .= '<section class="news-entry' . $addClass .'">';
+			$this->html .= '<div class="fb-post' . $addClass .'">';
 
 			// Looking for special posts
 			switch ($this->post->type) {
 				case 'photo':
 					$this->insertImage();
 					break;
-				
+
 				case 'video':
 					$this->insertVideo();
 					break;
@@ -123,10 +123,12 @@ class FacebookWall {
 
 			$this->insertFooter();
 
-			$this->html .= '</section>';
+			$this->html .= '</div>';
 
 			$this->post = null;
 		}
+
+		$this->html .= '</div>';
 
 		// Ready HTML markup
 		return $this->html;
@@ -150,9 +152,10 @@ class FacebookWall {
 	 * @return object An object which contains last posts
 	 */
 	private function retrieveData() {
-		$url = 'https://graph.facebook.com/' . $this->facebookId . '/feed?access_token=' . $this->accessToken . '&limit=' . $this->cfg['numPosts'];
-		$obj = json_decode(file_get_contents($url));
-		return $obj->data;
+		$url = 'https://graph.facebook.com/' . $this->facebookId . '?fields=posts.limit(' . $this->cfg['numPosts'] .')&access_token=' . $this->accessToken;
+		$wall = json_decode(file_get_contents($url));
+		$this->facebookId = $wall->id; // overwrite with numerical id
+		return $wall->posts->data;
 	}
 
 	/**
@@ -172,7 +175,7 @@ class FacebookWall {
 		$this->html .= '<p>';
 
 		if (isset($this->post->from) && isset($this->post->to)) {
-			$this->html .= '<a href="https://facebook.com/' . $this->post->from->id . '" 
+			$this->html .= '<a href="https://facebook.com/' . $this->post->from->id . '"
 				title="Facebook ' . PROFILE .'" target="_blank">' . $this->post->from->name . '</a>: ';
 		}
 
@@ -183,11 +186,11 @@ class FacebookWall {
 		}
 
 		$this->html .= '</p>';
-		
+
 	}
 
 	/**
-	 * Inserts footer of post in markup	
+	 * Inserts footer of post in markup
 	 * @return void
 	 */
 	private function insertFooter() {
@@ -200,20 +203,20 @@ class FacebookWall {
 				<span>
 					<span aria-hidden="true" class="icon-likes" title="' . LIKES . '"></span>' . $this->getNumLikes() . '
 				</span>
-			';	
-		}		
+			';
+		}
 
 		// Show comments button
-		if ($this->cfg['showComments'] && $this->post->comments->count > 0) {
+		if ($this->cfg['showComments'] && isset($this->post->comments)) {
 			$this->html .= '
 				<span>
 					<span aria-hidden="true" class="icon-comments"></span>
-					<a href="#" class="showComments">' . SHOW_COMMENTS . '</a> (' . $this->post->comments->count . ')
+					<a href="#" class="showComments">' . SHOW_COMMENTS . '</a> (' . count($this->post->comments->data) . ')
 				</span>
 			';
 		}
 
-		$this->insertPostDate();		
+		$this->insertPostDate();
 	}
 
 	/**
@@ -225,7 +228,7 @@ class FacebookWall {
 		$img = str_replace('_s.jpg', '_n.jpg', $this->post->picture);
 		$this->html .= '
 			<a href="' . $this->post->link . '" title="' . SEE_ON . ' Facebook" target="_blank">
-				<div class="news-image fancy-image left" style="background-image: url(' . $img . ')"></div>
+				<div class="news-image" style="background-image: url(' . $img . ')"></div>
 			</a>
 		';
 	}
@@ -249,15 +252,15 @@ class FacebookWall {
 	 * @return void
 	 */
 	private function insertComments() {
-		if ($this->post->comments->count > 0) {
-			$this->html .= '<section class="comments"><ul>';
+		if (isset($this->post->comments)) {
+			$this->html .= '<div class="comments" style="display: none;"><ul>';
 			foreach ($this->post->comments->data as $comment) {
 				$from = '<a href="https://facebook.com/' . $comment->from->id . '" target="_blank" title="Facebook ' . PROFILE . '">' . $comment->from->name . '</a>';
 				$this->html .= '
 					<li><div class="comment">' . $from . ': “' . $comment->message . '”</div></li>
 				';
 			}
-			$this->html .= '</ul></section>';
+			$this->html .= '</ul></div>';
 		}
 	}
 
@@ -266,14 +269,14 @@ class FacebookWall {
 	 * @return void
 	 */
 	private function insertPostDate() {
-		$postLink = 'https://www.facebook.com/' . $this->facebookId . '/posts/' . $this->postId;		
+		$postLink = 'https://www.facebook.com/' . $this->facebookId . '/posts/' . $this->postId;
 		$postDate = $this->formatDate($this->post->created_time, $this->cfg['lang']);
 
 		$this->html .= '
 				<a href="' . $postLink . '" class="date" title="' . ORIGINAL_POST . ' Facebook" target="_blank">
 					<span>' . POSTED_ON . ' ' . $postDate . '</span>
 				</a>
-			</footer>			
+			</footer>
 		';
 	}
 
@@ -282,10 +285,10 @@ class FacebookWall {
 	 * @return int Number of likes
 	 */
 	private function getNumLikes() {
-		if (empty($this->post->likes->count)) {
+		if (!isset($this->post->likes)) {
 			return 0;
 		} else {
-			return $this->post->likes->count;
+			return count($this->post->likes->data);
 		}
 	}
 
@@ -301,7 +304,7 @@ class FacebookWall {
 	}
 
 	/**
-	 * Returns given datetime in language specific format
+	 * Returns given datetime in locale specific format
 	 * @param  string $date mySQL datetime
 	 * @param  string $lang country code
 	 * @return string       formatted date
@@ -310,18 +313,18 @@ class FacebookWall {
 		switch ($lang) {
 			case 'de':
 				return date('d.m.Y - H:m', strtotime($date));
-				break;			
+				break;
 			case 'en':
 			default:
 				return date('m/d/Y - H:m', strtotime($date));
 				break;
 		}
-		
+
 	}
 
 	private function parseYoutubeOptions() {
-		$urlParams = '';		
-		
+		$urlParams = '';
+
 		$i = 1;
 		$n = count($this->cfg['youtube']);
 
@@ -335,5 +338,5 @@ class FacebookWall {
 
 		return $urlParams;
 	}
-	
+
 }
