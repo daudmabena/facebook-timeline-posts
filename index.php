@@ -11,8 +11,8 @@
 <body>
 	<?php
 		require_once('FacebookWall.php');
-		$fb = new FacebookWall('mccranc', '326204564096805|TJBwx3q1wcOj62mPmN3K743K0us');
-        echo $fb->render();
+		$fb = new FacebookWall('bbcnews', '326204564096805|TJBwx3q1wcOj62mPmN3K743K0us');
+		echo $fb->render();
 	?>
 </body>
 </html>
