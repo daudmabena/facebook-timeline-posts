@@ -10,18 +10,18 @@ class FacebookWall {
 
     // Config
     private $cfg = array(
-        'lang'          => 'en',
-        'langPath'      => 'lang/',
-        'numPosts'      => 15,
-        'limitLikes'    => 100,
-        'limitComments' => 100,
-        'justOwnPosts'  => true,
-        'showLikes'     => true,
-        'showComments'  => true,
-        'showDate'      => true,
-        'hyphenate'     => false,
-        'quotes'        => true,
-        'youtube'       => array(
+        'lang'          => 'en',		// Language to be used
+        'langPath'      => 'lang/',		// Path of i18n files
+        'numPosts'      => 10,			// Number of posts to be shown
+        'limitLikes'    => 100,			// Maximal shown likes (experimental)
+        'limitComments' => 50,			// Maximal shown comments (experimental)
+        'justOwnPosts'  => true,		// Show posts of other persons on feed as well?
+        'showLikes'     => true,		// Show number of likes beneath post?
+        'showComments'  => true,		// Show comments beneath posts?
+        'showDate'      => true,		// Show date of post beneath?
+        'hyphenate'     => false,		// Use Hyphenator.js? https://code.google.com/p/hyphenator
+        'quotes'        => true,		// Wrap post text in quotation marks?
+        'youtube'       => array(		// See https://developers.google.com/youtube/player_parameters
             'vq'              => 'large',
             'modestbranding'  => 1,
             'showinfo'        => 0,
@@ -35,7 +35,7 @@ class FacebookWall {
     private $postId;
 
     /**
-     * C'tor
+     * Constructor
      * @param mixed  $id    Numeric Facebook ID of user or page
      * @param string $token Facebook access token
      */
@@ -46,10 +46,6 @@ class FacebookWall {
 
         if (isset($token)) {
             $this->accessToken = $token;
-        }
-
-        if (isset($num)) {
-            $this->cfg['numPosts'] = $num;
         }
 
         $this->html = '<div id="fb-wall">';
@@ -101,33 +97,37 @@ class FacebookWall {
         foreach ($data as $this->post) {
             $this->postId = $this->getPostId();
 
-            // Skip entries with no message or foreign posts
-            if (empty($this->post->message) || $this->post->from->id !== $this->facebookId) {
+            // Skip entries with no message
+            if (empty($this->post->message)) {
                 continue;
+            }
+
+            // Skip foreign posts
+            if ($this->cfg['justOwnPosts'] && $this->post->from->id !== $this->facebookId) {
+            	continue;
             }
 
             // Initializing markup
             if ($this->cfg['hyphenate']) {
-                $addClass = ' hyphenate';
+                $postClass = ' hyphenate';
             } else {
-                $addClass = null;
+                $postClass = null;
             }
 
-            $this->html .= '<div class="fb-post' . $addClass .'">';
+            $this->html .= '<div class="fb-post' . $postClass .'">';
 
             // Looking for special posts
             switch ($this->post->type) {
                 case 'photo':
                     $this->insertImage();
                     break;
-
                 case 'video':
                     $this->insertVideo();
                     break;
             }
 
             $this->insertMessage();
-            // $this->insertLikes();
+            // $this->insertLikes(); // List of likes, not working right now
 
             if ($this->cfg['showComments']) {
                 $this->insertComments();
@@ -137,7 +137,6 @@ class FacebookWall {
 
             $this->html .= '</div>';
         }
-
         $this->html .= '</div>';
 
         return $this->html;
@@ -167,9 +166,21 @@ class FacebookWall {
         if (empty($this->accessToken)) {
             throw new Exception('Error: Access token not set!');
         }
+
         $url = 'https://graph.facebook.com/' . $this->facebookId;
-        $url .= '?fields=posts.limit(' . $this->cfg['numPosts'] . ').fields(id,name,from,to,message,comments.limit(' . $this->cfg['limitComments'] . '),likes.limit(' . $this->cfg['limitLikes'] . '),picture,link,created_time,type)';
-        $url .= '&access_token=' . $this->accessToken;
+        $url .= '?fields=posts.limit(' . $this->cfg['numPosts'] . ').fields(';
+		    $url .= 'id,';
+		    $url .= 'name,';
+		    $url .= 'from,';
+		    $url .= 'to,';
+		    $url .= 'message,';
+		    $url .= 'comments.limit(' . $this->cfg['limitComments'] . '),';
+		    $url .= 'likes.limit(' . $this->cfg['limitLikes'] . '),';
+		    $url .= 'picture,';
+		    $url .= 'link,';
+		    $url .= 'created_time,';
+		    $url .= 'type';
+        $url .= ')&access_token=' . $this->accessToken;
 
         $wall = json_decode(file_get_contents($url));
 
@@ -223,6 +234,7 @@ class FacebookWall {
             <footer>
         ';
 
+        // Number of likes
         if ($this->cfg['showLikes']) {
             $this->html .= '
                 <span>
@@ -236,7 +248,7 @@ class FacebookWall {
             $this->html .= '
                 <span>
                     <span aria-hidden="true" class="icon-comments"></span>
-                    <a href="#" class="showComments">' . SHOW_COMMENTS . '</a> (' . count($this->post->comments->data) . ')
+                    <a href="javascript:void(0)" class="showComments">' . SHOW_COMMENTS . '</a> (' . count($this->post->comments->data) . ')
                 </span>
             ';
         }
@@ -274,7 +286,7 @@ class FacebookWall {
 
     /**
      * Inserts list of likes in markup
-     * This is rather experimental...
+     * This is rather experimental and disabled right now...
      * @return void
      */
     private function insertLikes() {
