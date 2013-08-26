@@ -9,7 +9,7 @@ Many aspects of the class are configurable via an options array. Simply copy the
 require_once('FacebookWall.php');
 
 $id = 'bbcnews';
-$access_token = '326204564096805|TJBwx3q1wcOj62mPmN3K743K0us'
+$access_token = '326204564096805|TJBwx3q1wcOj62mPmN3K743K0us';
 
 $fb = new FacebookWall($id, $access_token);
 
