@@ -10,18 +10,18 @@ class FacebookWall {
 
     // Config
     private $cfg = array(
-        'lang'          => 'en',        // Language
-        'langPath'      => 'lang/',     // Path of i18n files
+        'lang'          => 'en',       // Language
+        'langPath'      => 'lang/',    // Path of i18n files
         'numPosts'      => 8,          // Number of posts to be shown
         'limitLikes'    => 500,        // Maximal shown likes (experimental)
-        'limitComments' => 50,          // Maximal shown comments (experimental)
-        'justOwnPosts'  => true,        // Show posts of other persons on feed as well?
-        'showLikes'     => true,        // Show number of likes beneath post?
-        'showComments'  => true,        // Show comments beneath posts?
-        'showDate'      => true,        // Show date of post beneath?
-        'hyphenate'     => false,       // Use Hyphenator.js? https://code.google.com/p/hyphenator
-        'quotes'        => false,        // Wrap post text in quotation marks?
-        'youtube'       => array(       // See https://developers.google.com/youtube/player_parameters
+        'limitComments' => 50,         // Maximal shown comments (experimental)
+        'justOwnPosts'  => true,       // Show posts of other persons on feed as well?
+        'showLikes'     => true,       // Show number of likes beneath post?
+        'showComments'  => true,       // Show comments beneath posts?
+        'showDate'      => true,       // Show date of post beneath?
+        'hyphenate'     => false,      // Use Hyphenator.js? https://code.google.com/p/hyphenator
+        'quotes'        => false,      // Wrap post text in quotation marks?
+        'youtube'       => array(      // See https://developers.google.com/youtube/player_parameters
             'vq'              => 'large',
             'modestbranding'  => 1,
             'showinfo'        => 0,
@@ -48,7 +48,7 @@ class FacebookWall {
             $this->accessToken = $token;
         }
 
-		$this->setupLocale();
+        $this->setupLocale();
 
         $this->html = '<div id="fb-wall">';
     }
@@ -66,7 +66,7 @@ class FacebookWall {
         if (in_array($lang, $available)) {
             $this->cfg['lang'] = $lang;
         }
-		$this->setupLocale();
+        $this->setupLocale();
     }
 
     /**
@@ -106,7 +106,7 @@ class FacebookWall {
             }
 
             // Skip foreign posts
-			// FIXME: Make this configurable
+            // FIXME: Make this configurable
             if ($this->cfg['justOwnPosts'] && $this->post->from->id !== $this->facebookId) {
                 continue;
             }
@@ -160,27 +160,27 @@ class FacebookWall {
     }
 
 
-	/**
-	 * Sets up locale
-	 * @return bool status
-	 */
-	private function setupLocale() {
-		if (!isset($this->cfg['lang'])) {
-			return false;
-		}
+    /**
+     * Sets up locale
+     * @return bool status
+     */
+    private function setupLocale() {
+        if (!isset($this->cfg['lang'])) {
+            return false;
+        }
 
-		switch ($this->cfg['lang']) {
-			default:
-			case 'en':
-				setlocale (LC_ALL, 'en_US.utf8');
-				break;
-			case 'de':
-				setlocale (LC_ALL, 'de_DE.utf8');
-				break;
-		}
+        switch ($this->cfg['lang']) {
+            default:
+            case 'en':
+                setlocale (LC_ALL, 'en_US.utf8');
+                break;
+            case 'de':
+                setlocale (LC_ALL, 'de_DE.utf8');
+                break;
+        }
 
-		return true;
-	}
+        return true;
+    }
 
     /**
      * Retrieves data from a specific facebook wall
@@ -197,17 +197,17 @@ class FacebookWall {
 
         $url = 'https://graph.facebook.com/' . $this->facebookId;
         $url .= '?fields=posts.limit(' . $this->cfg['numPosts'] . ').fields(';
-		$url .= 'id,';
-		$url .= 'name,';
-		$url .= 'from,';
-		$url .= 'to,';
-		$url .= 'message,';
-		$url .= 'comments.limit(' . $this->cfg['limitComments'] . '),';
-		$url .= 'likes.limit(' . $this->cfg['limitLikes'] . '),';
-		$url .= 'picture,';
-		$url .= 'link,';
-		$url .= 'created_time,';
-		$url .= 'type';
+        $url .= 'id,';
+        $url .= 'name,';
+        $url .= 'from,';
+        $url .= 'to,';
+        $url .= 'message,';
+        $url .= 'comments.limit(' . $this->cfg['limitComments'] . '),';
+        $url .= 'likes.limit(' . $this->cfg['limitLikes'] . '),';
+        $url .= 'picture,';
+        $url .= 'link,';
+        $url .= 'created_time,';
+        $url .= 'type';
         $url .= ')&access_token=' . $this->accessToken;
 
         $wall = json_decode(file_get_contents($url));
@@ -309,7 +309,7 @@ class FacebookWall {
 
     /**
      * Inserts a post video in markup (YouTube)
-	 * FIXME: This only works if YouTube videoId is set in GET parameter 'v'
+     * FIXME: This only works if YouTube videoId is set in GET parameter 'v'
      * @return void
      */
     private function insertVideo() {
@@ -323,11 +323,11 @@ class FacebookWall {
             ';
         }
 
-		if (isset($urlParams['v'])) {
-			$this->html .= '
-				<iframe class="youtube" src="http://www.youtube.com/embed/' . $urlParams['v'] . '?' . $this->parseYoutubeOptions() . '" allowfullscreen></iframe>
-			';
-		}
+        if (isset($urlParams['v'])) {
+            $this->html .= '
+                <iframe class="youtube" src="http://www.youtube.com/embed/' . $urlParams['v'] . '?' . $this->parseYoutubeOptions() . '" allowfullscreen></iframe>
+            ';
+        }
     }
 
     /**
@@ -354,10 +354,6 @@ class FacebookWall {
      * @return void
      */
     private function insertComments() {
-        // echo '<pre>';
-        // print_r($this->post->comments);
-        // echo '</pre>';
-
         if (isset($this->post->comments)) {
             $this->html .= '<div class="comments" style="display: none;"><ul>';
             foreach ($this->post->comments->data as $comment) {
@@ -416,7 +412,7 @@ class FacebookWall {
     /**
      * Scans given string for hyperlinks, and links them via HTML
      * Uses target='_blank'
-	 * TODO: Use different label for different types of links (Facebook event, external, ...)
+     * TODO: Use different label for different types of links (Facebook event, external, ...)
      * @param string A string which may contain hyperlinks
      * @return string HTML markup
      */
@@ -432,7 +428,7 @@ class FacebookWall {
      * @return string       formatted date
      */
     private function formatDate($date) {
-		$time = strtotime($date);
+        $time = strtotime($date);
 
         switch ($this->cfg['lang']) {
             case 'de':
