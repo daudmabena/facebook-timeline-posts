@@ -9,3 +9,4 @@ define('PROFILE', 'Profil');
 define('SEE_ON', 'Auf');
 define('SHOW_COMMENTS', 'Kommentare anzeigen');
 define('SHOW_LIKES', 'Likes anzeigen');
+define('VIDEO_LINK', 'Video');

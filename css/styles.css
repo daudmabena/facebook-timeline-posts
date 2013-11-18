@@ -25,6 +25,12 @@ body * {
 	padding-top: 0;
 }
 
+#fb-wall .fb-post pre {
+ 	white-space: -moz-pre-wrap;
+	white-space: pre-wrap;
+	font-family: inherit;
+}
+
 #fb-wall .fb-post .likes {
     padding-left: 30px;
 }

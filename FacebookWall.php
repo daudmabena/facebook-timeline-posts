@@ -10,18 +10,18 @@ class FacebookWall {
 
     // Config
     private $cfg = array(
-        'lang'          => 'en',		// Language to be used
-        'langPath'      => 'lang/',		// Path of i18n files
-        'numPosts'      => 10,			// Number of posts to be shown
-        'limitLikes'    => 100,			// Maximal shown likes (experimental)
-        'limitComments' => 50,			// Maximal shown comments (experimental)
-        'justOwnPosts'  => true,		// Show posts of other persons on feed as well?
-        'showLikes'     => true,		// Show number of likes beneath post?
-        'showComments'  => true,		// Show comments beneath posts?
-        'showDate'      => true,		// Show date of post beneath?
-        'hyphenate'     => false,		// Use Hyphenator.js? https://code.google.com/p/hyphenator
-        'quotes'        => true,		// Wrap post text in quotation marks?
-        'youtube'       => array(		// See https://developers.google.com/youtube/player_parameters
+        'lang'          => 'en',        // Language
+        'langPath'      => 'lang/',     // Path of i18n files
+        'numPosts'      => 8,          // Number of posts to be shown
+        'limitLikes'    => 500,        // Maximal shown likes (experimental)
+        'limitComments' => 50,          // Maximal shown comments (experimental)
+        'justOwnPosts'  => true,        // Show posts of other persons on feed as well?
+        'showLikes'     => true,        // Show number of likes beneath post?
+        'showComments'  => true,        // Show comments beneath posts?
+        'showDate'      => true,        // Show date of post beneath?
+        'hyphenate'     => false,       // Use Hyphenator.js? https://code.google.com/p/hyphenator
+        'quotes'        => false,        // Wrap post text in quotation marks?
+        'youtube'       => array(       // See https://developers.google.com/youtube/player_parameters
             'vq'              => 'large',
             'modestbranding'  => 1,
             'showinfo'        => 0,
@@ -48,6 +48,8 @@ class FacebookWall {
             $this->accessToken = $token;
         }
 
+		$this->setupLocale();
+
         $this->html = '<div id="fb-wall">';
     }
 
@@ -64,6 +66,7 @@ class FacebookWall {
         if (in_array($lang, $available)) {
             $this->cfg['lang'] = $lang;
         }
+		$this->setupLocale();
     }
 
     /**
@@ -79,8 +82,8 @@ class FacebookWall {
     }
 
     /**
-     * Main methode: Gathers data from Facebook wall and renders HTML markup
-     * @return false on error, HTML markup on success
+     * Main method: Gathers data from Facebook wall and renders HTML markup
+     * @return boolean false on error, HTML markup on success
      */
     public function render() {
 
@@ -103,8 +106,9 @@ class FacebookWall {
             }
 
             // Skip foreign posts
+			// FIXME: Make this configurable
             if ($this->cfg['justOwnPosts'] && $this->post->from->id !== $this->facebookId) {
-            	continue;
+                continue;
             }
 
             // Initializing markup
@@ -155,8 +159,32 @@ class FacebookWall {
         ob_end_flush();
     }
 
+
+	/**
+	 * Sets up locale
+	 * @return bool status
+	 */
+	private function setupLocale() {
+		if (!isset($this->cfg['lang'])) {
+			return false;
+		}
+
+		switch ($this->cfg['lang']) {
+			default:
+			case 'en':
+				setlocale (LC_ALL, 'en_US.utf8');
+				break;
+			case 'de':
+				setlocale (LC_ALL, 'de_DE.utf8');
+				break;
+		}
+
+		return true;
+	}
+
     /**
      * Retrieves data from a specific facebook wall
+     * @throws Exception
      * @return object An object which contains last posts
      */
     private function retrieveData() {
@@ -169,17 +197,17 @@ class FacebookWall {
 
         $url = 'https://graph.facebook.com/' . $this->facebookId;
         $url .= '?fields=posts.limit(' . $this->cfg['numPosts'] . ').fields(';
-		    $url .= 'id,';
-		    $url .= 'name,';
-		    $url .= 'from,';
-		    $url .= 'to,';
-		    $url .= 'message,';
-		    $url .= 'comments.limit(' . $this->cfg['limitComments'] . '),';
-		    $url .= 'likes.limit(' . $this->cfg['limitLikes'] . '),';
-		    $url .= 'picture,';
-		    $url .= 'link,';
-		    $url .= 'created_time,';
-		    $url .= 'type';
+		$url .= 'id,';
+		$url .= 'name,';
+		$url .= 'from,';
+		$url .= 'to,';
+		$url .= 'message,';
+		$url .= 'comments.limit(' . $this->cfg['limitComments'] . '),';
+		$url .= 'likes.limit(' . $this->cfg['limitLikes'] . '),';
+		$url .= 'picture,';
+		$url .= 'link,';
+		$url .= 'created_time,';
+		$url .= 'type';
         $url .= ')&access_token=' . $this->accessToken;
 
         $wall = json_decode(file_get_contents($url));
@@ -196,7 +224,7 @@ class FacebookWall {
 
     /**
      * Sets postId attribute up
-     * @return void
+     * @return string post id
      */
     private function getPostId() {
         $tmp = explode('_', $this->post->id);
@@ -208,7 +236,7 @@ class FacebookWall {
      * @return void
      */
     private function insertMessage() {
-        $this->html .= '<p>';
+        $this->html .= '<pre>';
 
         if (isset($this->post->from) && isset($this->post->to)) {
             $this->html .= '<a href="https://facebook.com/' . $this->post->from->id . '"
@@ -221,7 +249,7 @@ class FacebookWall {
             $this->html .= $this->autolink($this->post->message);
         }
 
-        $this->html .= '</p>';
+        $this->html .= '</pre>';
 
     }
 
@@ -248,7 +276,16 @@ class FacebookWall {
             $this->html .= '
                 <span>
                     <span aria-hidden="true" class="icon-comments"></span>
-                    <a href="javascript:void(0)" class="showComments">' . SHOW_COMMENTS . '</a> (' . count($this->post->comments->data) . ')
+                    <a href="javascript:void(0)" class="showComments">' . SHOW_COMMENTS . '</a>
+            ';
+
+            $numOfComments = count($this->post->comments->data);
+            if ($numOfComments == $this->cfg['limitComments']) {
+                $numOfComments = ($numOfComments - 1) . '+';
+            }
+
+            $this->html .= '(' . $numOfComments . ')';
+            $this->html .= '
                 </span>
             ';
         }
@@ -272,16 +309,25 @@ class FacebookWall {
 
     /**
      * Inserts a post video in markup (YouTube)
+	 * FIXME: This only works if YouTube videoId is set in GET parameter 'v'
      * @return void
      */
     private function insertVideo() {
         parse_str(parse_url($this->post->link, PHP_URL_QUERY), $urlParams);
-        $this->html .= '
-            <h2>
-                <a href="' . $this->post->link . '" title="YouTube Link" target="_blank">' . $this->post->name . '</a>
-            </h2>
-            <iframe class="youtube" src="http://www.youtube.com/embed/' . $urlParams['v'] . '?' . $this->parseYoutubeOptions() . '" allowfullscreen></iframe>
-        ';
+
+        if (isset($this->post->name)) {
+            $this->html .= '
+                <h2>
+                    <a href="' . $this->post->link . '" title="YouTube Link" target="_blank">' . $this->post->name . '</a>
+                </h2>
+            ';
+        }
+
+		if (isset($urlParams['v'])) {
+			$this->html .= '
+				<iframe class="youtube" src="http://www.youtube.com/embed/' . $urlParams['v'] . '?' . $this->parseYoutubeOptions() . '" allowfullscreen></iframe>
+			';
+		}
     }
 
     /**
@@ -308,12 +354,25 @@ class FacebookWall {
      * @return void
      */
     private function insertComments() {
+        // echo '<pre>';
+        // print_r($this->post->comments);
+        // echo '</pre>';
+
         if (isset($this->post->comments)) {
             $this->html .= '<div class="comments" style="display: none;"><ul>';
             foreach ($this->post->comments->data as $comment) {
                 $from = '<a href="https://facebook.com/' . $comment->from->id . '" target="_blank" title="Facebook ' . PROFILE . '">' . $comment->from->name . '</a>';
                 $this->html .= '
-                    <li><div class="comment">' . $from . ': “' . $comment->message . '”</div></li>
+                    <li>
+                        <div class="comment">
+                            <div class="comment-body">' .
+                                $from . ': “' . $comment->message . '”
+                            </div>
+                            <div class="comment-date">
+                                <span>' . $this->formatDate($comment->created_time) . '</span>
+                            </div>
+                        </div>
+                    </li>
                 ';
             }
             $this->html .= '</ul></div>';
@@ -326,7 +385,7 @@ class FacebookWall {
      */
     private function insertPostDate() {
         $postLink = 'https://www.facebook.com/' . $this->facebookId . '/posts/' . $this->postId;
-        $postDate = $this->formatDate($this->post->created_time, $this->cfg['lang']);
+        $postDate = $this->formatDate($this->post->created_time);
 
         $this->html .= '
                 <a href="' . $postLink . '" class="date" title="' . ORIGINAL_POST . ' Facebook" target="_blank">
@@ -357,6 +416,8 @@ class FacebookWall {
     /**
      * Scans given string for hyperlinks, and links them via HTML
      * Uses target='_blank'
+	 * TODO: Use different label for different types of links (Facebook event, external, ...)
+     * @param string A string which may contain hyperlinks
      * @return string HTML markup
      */
     private function autolink($str) {
@@ -370,16 +431,20 @@ class FacebookWall {
      * @param  string $lang country code
      * @return string       formatted date
      */
-    private function formatDate($date, $lang) {
-        switch ($lang) {
+    private function formatDate($date) {
+		$time = strtotime($date);
+
+        switch ($this->cfg['lang']) {
             case 'de':
-                return date('d.m.Y - H:m', strtotime($date));
+                $date = date('j.', $time) . ' ' . strftime('%B', $time) . ' um '  . date('H:m', $time);
                 break;
             case 'en':
             default:
-                return date('m/d/Y - H:m', strtotime($date));
+                $date = strftime('%B', $time) . ' ' . date('jS \a\t G:m', $time);
                 break;
         }
+
+        return $date;
 
     }
 
